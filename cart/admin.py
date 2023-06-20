@@ -12,6 +12,7 @@ from .models import (
     Payment,
     Category,
     StripePayment,
+    ProductImage
 )
 
 
@@ -25,12 +26,16 @@ class AddressAdmin(admin.ModelAdmin):
         'address_type',
     ]
 
+class ProductAdmin(admin.ModelAdmin):
+    prepopulated_fields = {"slug": ("title",)}
+
 
 admin.site.register(Order)
-admin.site.register(Product)
+admin.site.register(Product, ProductAdmin)
 admin.site.register(Payment)
 admin.site.register(Category)
 admin.site.register(OrderItem)
 admin.site.register(SizeVariation)
 admin.site.register(StripePayment)
 admin.site.register(ColourVariation)
+admin.site.register(ProductImage)

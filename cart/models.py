@@ -62,6 +62,9 @@ class SizeVariation(models.Model):
     def __str__(self) -> str:
         return self.name
 
+from django.db import models
+from django.utils.text import slugify
+from django.urls import reverse
 
 class Product(models.Model):
     description = models.TextField()
@@ -71,16 +74,16 @@ class Product(models.Model):
     active = models.BooleanField(default=False)
     updated = models.DateTimeField(auto_now=True)
     created = models.DateTimeField(auto_now_add=True)
-    image = models.ImageField(upload_to='product_images')
+    image = models.ManyToManyField(to='ProductImage', blank=True)
     available_sizes = models.ManyToManyField(SizeVariation)
     available_colours = models.ManyToManyField(ColourVariation)
-    secondary_categories = models.ManyToManyField(to=Category, blank=True)
-    price = models.DecimalField(default=0, max_digits=9, decimal_places=2, )
+    secondary_categories = models.ManyToManyField(Category, blank=True)
+    price = models.DecimalField(default=0, max_digits=9, decimal_places=2)
     primary_category = models.ForeignKey(
-        to=Category,
+        Category,
         on_delete=models.CASCADE,
         related_name='primary_products',
-        blank=True, null=True,
+        blank=True, null=True
     )
 
     def __str__(self) -> str:
@@ -106,6 +109,14 @@ class Product(models.Model):
     @property
     def in_stock(self) -> bool:
         return self.stock > 0
+
+
+class ProductImage(models.Model):
+    image = models.ImageField(upload_to='product_images')
+
+    def __str__(self):
+        return self.image.name
+
 
 
 class OrderItem(models.Model):

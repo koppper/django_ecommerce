@@ -13,6 +13,7 @@ from django.shortcuts import (get_object_or_404, reverse, redirect)
 from django.utils import timezone
 from django.views import generic
 from django.views.decorators.csrf import csrf_exempt
+from decimal import Decimal
 
 from .forms import (
     AddToCartForm,
@@ -34,23 +35,45 @@ logger = getLogger(__name__)
 
 stripe.api_key = settings.STRIPE_SECRET_KEY
 
+from decimal import Decimal
+from django.db.models import Q
+from django.views import generic
+from .models import Product, Category
 
 class ProductListView(generic.ListView):
-    template_name: str = 'cart/product_list.html'
+    template_name = 'cart/product_list.html'
+    paginate_by = 5
 
     def get_queryset(self):
         qs = Product.objects.all()
-        category = self.request.GET.get('category', None)
-        if not category:
-            return qs
-        return qs.filter(
-            Q(primary_category__name=category) |
-            Q(secondary_categories__name=category)
-        ).distinct()
+        
+        title = self.request.GET.get('title')
+        if title:
+            qs = qs.filter(title=title)
+        
+        min_price = self.request.GET.get('min_price')
+        max_price = self.request.GET.get('max_price')
+        
+        if min_price is not None and max_price is not None:
+            try:
+                min_price = Decimal(min_price)
+                max_price = Decimal(max_price)
+                qs = qs.filter(price__range=(min_price, max_price))
+            except DecimalException:
+                pass
 
-    def get_context_data(self, **kwargs) -> Dict[str, Any]:
-        context = super(ProductListView, self).get_context_data(**kwargs)
-        context.update({"categories": Category.objects.values("name")})
+        category = self.request.GET.get('category')
+        if category:
+            qs = qs.filter(
+                Q(primary_category__name=category) |
+                Q(secondary_categories__name=category)
+            ).distinct()
+
+        return qs
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["categories"] = Category.objects.values("name")
         return context
 
 
